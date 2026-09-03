@@ -1,0 +1,6 @@
+title_id,title_name,genre,launch_date,lead_studio_id,base_price_usd
+T-01,Hollow Crown,Tactical RPG,2024-11-14,STU-01,49.99
+T-02,Hollow Crown: Ashen Tide,Expansion,2025-09-30,STU-01,24.99
+T-03,Lantern & Lock,Puzzle,2025-03-05,STU-04,14.99
+T-04,Saltmarsh Rally,Racing,2024-10-02,STU-03,29.99
+T-05,Emberwatch Tactics,Tactics,2026-02-12,STU-02,39.99

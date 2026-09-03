@@ -1,0 +1,6 @@
+platform_code,platform_name,settlement_lag_days
+EPIC,Epic Games Store,30
+NSW,Nintendo eShop,60
+PSN,PlayStation Store,45
+STEAM,Steam,30
+XBOX,Xbox Store,45

@@ -1,0 +1,8 @@
+title_id,studio_id,credit_role
+T-01,STU-01,Lead
+T-02,STU-01,Lead
+T-02,STU-02,Co-development
+T-03,STU-04,Lead
+T-04,STU-03,Lead
+T-05,STU-02,Lead
+T-05,STU-04,Co-development
