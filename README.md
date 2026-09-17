@@ -34,6 +34,13 @@ python3 bin/query.py "SELECT * FROM fact_order LIMIT 5"
 The warehouse is clean. Nobody has planted broken rows in it. Everything that is hard here is hard
 because of how the business counts, not because the data is dirty.
 
+One column needs a definition, because its name promises more than it delivers:
+
+- **`fact_order.order_status`** — `refunded` marks orders that were refunded **in full**. An order
+  with a **partial** refund stays `completed`. So the column never tells you the whole refund story:
+  refund amounts always come from `fact_refund`, and you should not filter on `order_status` to
+  account for refunds.
+
 ## What to deliver
 
 ### 1. The semantic model — `MODEL.md`
