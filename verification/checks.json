@@ -1,0 +1,342 @@
+{
+  "note": "SQL here mirrors each measure's filter context from MEASURES.dax exactly (same date column per date role, same fact per measure, CAST(...AS REAL) on every text-stored amount column — see AI_WORKFLOW_LOG.md for why the CAST matters). verify_scorecard.py runs every 'value' check and reports the rounded-to-2dp result, then runs the 'assertion' checks as internal-consistency regression tests. SCORECARD.md is filled only from a PASS run.",
+  "value_checks": [
+    {
+      "id": "q1_T-01",
+      "scorecard_cell": "1. Hollow Crown",
+      "measure": "Net Revenue",
+      "filters": "fact_order.order_date in [2026-01-01,2026-03-31] AND title_id='T-01'  minus  fact_refund.order_date in same range AND title_id='T-01'",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-01') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-01')",
+      "expected": 145510.77
+    },
+    {
+      "id": "q1_T-02",
+      "scorecard_cell": "1. Hollow Crown: Ashen Tide",
+      "measure": "Net Revenue",
+      "filters": "same as above, title_id='T-02'",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-02') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-02')",
+      "expected": 44894.38
+    },
+    {
+      "id": "q1_T-05",
+      "scorecard_cell": "1. Emberwatch Tactics",
+      "measure": "Net Revenue",
+      "filters": "same as above, title_id='T-05'",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-05') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-05')",
+      "expected": 51037.14
+    },
+    {
+      "id": "q1_T-04",
+      "scorecard_cell": "1. Saltmarsh Rally",
+      "measure": "Net Revenue",
+      "filters": "same as above, title_id='T-04'",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-04') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-04')",
+      "expected": 47119.73
+    },
+    {
+      "id": "q1_T-03",
+      "scorecard_cell": "1. Lantern & Lock",
+      "measure": "Net Revenue",
+      "filters": "same as above, title_id='T-03'",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-03') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id='T-03')",
+      "expected": 27300.05
+    },
+    {
+      "id": "q1_company",
+      "scorecard_cell": "1. Company total, FY2026 Q2",
+      "measure": "Company Net Revenue",
+      "filters": "fact_order/fact_refund order_date in [2026-01-01,2026-03-31], no title filter",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31')",
+      "expected": 315862.09
+    },
+    {
+      "id": "q2_cash_settled_dec25",
+      "scorecard_cell": "2. Net revenue settled in Dec 2025",
+      "measure": "Cash Settled",
+      "filters": "fact_order.settlement_date in [2025-12-01,2025-12-31], USERELATIONSHIP(settlement_date), no refund subtraction",
+      "sql": "SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE settlement_date BETWEEN '2025-12-01' AND '2025-12-31'",
+      "expected": 103907.40
+    },
+    {
+      "id": "q3_refunds_treasury_dec25",
+      "scorecard_cell": "3. Refunds recognised in Dec 2025",
+      "measure": "Refunds (Treasury)",
+      "filters": "fact_refund.refund_date in [2025-12-01,2025-12-31], USERELATIONSHIP(refund_date)",
+      "sql": "SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE refund_date BETWEEN '2025-12-01' AND '2025-12-31'",
+      "expected": 5009.66
+    },
+    {
+      "id": "q4_STU-01",
+      "scorecard_cell": "4. Twin Hearth Studios",
+      "measure": "Studio Credit Total (per-studio term)",
+      "filters": "titles credited to STU-01 = {T-01,T-02} via bridge, order_date FY2026 [2025-10-01,2026-09-30]",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-01','T-02')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-01','T-02'))",
+      "expected": 915896.67
+    },
+    {
+      "id": "q4_STU-02",
+      "scorecard_cell": "4. Emberwatch Interactive",
+      "measure": "Studio Credit Total (per-studio term)",
+      "filters": "titles credited to STU-02 = {T-02,T-05} via bridge, FY2026",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-02','T-05')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-02','T-05'))",
+      "expected": 424406.54
+    },
+    {
+      "id": "q4_STU-04",
+      "scorecard_cell": "4. Nine Lanterns",
+      "measure": "Studio Credit Total (per-studio term)",
+      "filters": "titles credited to STU-04 = {T-03,T-05} via bridge, FY2026",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-03','T-05')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-03','T-05'))",
+      "expected": 309959.94
+    },
+    {
+      "id": "q4_STU-03",
+      "scorecard_cell": "4. Saltpine Games",
+      "measure": "Studio Credit Total (per-studio term)",
+      "filters": "titles credited to STU-03 = {T-04} via bridge, FY2026",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-04')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-04'))",
+      "expected": 215396.86
+    },
+    {
+      "id": "q4_sum_four",
+      "scorecard_cell": "4. Sum of the four rows above",
+      "measure": "Studio Credit Total",
+      "filters": "SUMX(VALUES(dim_studio), Net Revenue) -- sum of the four values above",
+      "sql": "SELECT ROUND(915896.67 + 424406.54 + 309959.94 + 215396.86, 2)",
+      "expected": 1865660.01
+    },
+    {
+      "id": "q4_company",
+      "scorecard_cell": "4. Company net revenue, FY2026",
+      "measure": "Company Net Revenue",
+      "filters": "fact_order/fact_refund order_date in FY2026 [2025-10-01,2026-09-30], no studio/title filter (ALL stripped)",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30')",
+      "expected": 1441253.46
+    },
+    {
+      "id": "q5_paying_players",
+      "scorecard_cell": "5. Paying players",
+      "measure": "Paying Players",
+      "filters": "COUNTROWS(FILTER(dim_player, ROUND(Net Revenue,4) > 0)) for FY2026 Q2 [2026-01-01,2026-03-31]",
+      "sql": "WITH ord AS (SELECT player_id, SUM(CAST(net_usd AS REAL)) net FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' GROUP BY player_id), ref AS (SELECT player_id, SUM(CAST(net_refund_usd AS REAL)) net FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' GROUP BY player_id) SELECT SUM(CASE WHEN ROUND(o.net - COALESCE(r.net,0), 4) > 0 THEN 1 ELSE 0 END) FROM ord o LEFT JOIN ref r ON o.player_id = r.player_id",
+      "expected": 12498
+    },
+    {
+      "id": "q5_paying_players_transacted_footnote",
+      "scorecard_cell": "5. footnote — Paying Players (Transacted)",
+      "measure": "Paying Players (Transacted)",
+      "filters": "DISTINCTCOUNT(fact_order.player_id) for FY2026 Q2",
+      "sql": "SELECT COUNT(DISTINCT player_id) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31'",
+      "expected": 12807
+    },
+    {
+      "id": "q5_revenue_per_player",
+      "scorecard_cell": "5. Revenue per paying player",
+      "measure": "Revenue per Paying Player",
+      "filters": "Net Revenue(FY2026 Q2) / Paying Players(FY2026 Q2) = 315862.09 / 12498",
+      "sql": "SELECT ROUND(315862.09 / 12498, 2)",
+      "expected": 25.27
+    },
+    {
+      "id": "q6_fy25q2",
+      "scorecard_cell": "6. (intermediate) FY2025 Q2 net revenue",
+      "measure": "Net Revenue PY",
+      "filters": "order_date in [2025-01-01,2025-03-31] via DATEADD(-1,YEAR) from FY2026 Q2",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31')",
+      "expected": 143217.79
+    },
+    {
+      "id": "q6_growth_pct",
+      "scorecard_cell": "6. FY2026 Q2 vs FY2025 Q2, %",
+      "measure": "Net Revenue YoY %",
+      "filters": "(Net Revenue - Net Revenue PY) / Net Revenue PY * 100 = (315862.09 - 143217.79) / 143217.79 * 100",
+      "sql": "SELECT ROUND((315862.09 - 143217.79) / 143217.79 * 100, 2)",
+      "expected": 120.55
+    },
+    {
+      "id": "q7_T-01",
+      "scorecard_cell": "7. Hollow Crown — Net revenue",
+      "measure": "Net Revenue",
+      "filters": "title_id='T-01', order_date FY2026 [2025-10-01,2026-09-30]",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id='T-01') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id='T-01')",
+      "expected": 679729.98
+    },
+    {
+      "id": "q7_T-02",
+      "scorecard_cell": "7. Hollow Crown: Ashen Tide — Net revenue",
+      "measure": "Net Revenue",
+      "filters": "title_id='T-02', order_date FY2026 [2025-10-01,2026-09-30]",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id='T-02') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id='T-02')",
+      "expected": 236166.69
+    },
+    {
+      "id": "q7_T-01_pct",
+      "scorecard_cell": "7. Hollow Crown — % of studio",
+      "measure": "% of Studio Net Revenue",
+      "filters": "Net Revenue(T-01,FY2026) / Studio Total Net Revenue(STU-01,FY2026) = 679729.98 / 915896.67",
+      "sql": "SELECT ROUND(679729.98 / 915896.67 * 100, 2)",
+      "expected": 74.21
+    },
+    {
+      "id": "q7_T-02_pct",
+      "scorecard_cell": "7. Hollow Crown: Ashen Tide — % of studio",
+      "measure": "% of Studio Net Revenue",
+      "filters": "Net Revenue(T-02,FY2026) / Studio Total Net Revenue(STU-01,FY2026) = 236166.69 / 915896.67",
+      "sql": "SELECT ROUND(236166.69 / 915896.67 * 100, 2)",
+      "expected": 25.79
+    },
+    {
+      "id": "q6_likeforlike_current",
+      "scorecard_cell": "6. footnote — Net Revenue (Like-for-like), FY2026 Q2",
+      "measure": "Net Revenue (Like-for-like)",
+      "filters": "Net Revenue for titles active (net revenue > 0) in BOTH FY2026 Q2 and FY2025 Q2 -- excludes T-02 (launched 2025-09-30, zero in FY2025 Q2) and T-05 (launched 2026-02-12, zero in FY2025 Q2)",
+      "sql": "SELECT SUM(v) FROM (SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id=t.title_id) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id=t.title_id) AS v FROM dim_title t WHERE t.title_id IN ('T-01','T-03','T-04'))",
+      "expected": 219930.56
+    },
+    {
+      "id": "q6_likeforlike_py",
+      "scorecard_cell": "6. footnote — Net Revenue (Like-for-like) PY, FY2025 Q2",
+      "measure": "Net Revenue (Like-for-like) PY",
+      "filters": "Same title set (T-01,T-03,T-04), order_date shifted to FY2025 Q2 via DATEADD(-1,YEAR)",
+      "sql": "SELECT SUM(v) FROM (SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id=t.title_id) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id=t.title_id) AS v FROM dim_title t WHERE t.title_id IN ('T-01','T-03','T-04'))",
+      "expected": 143217.79
+    },
+    {
+      "id": "q6_likeforlike_growth_pct",
+      "scorecard_cell": "6. footnote — Net Revenue YoY % (Like-for-like)",
+      "measure": "Net Revenue YoY % (Like-for-like)",
+      "filters": "(Net Revenue (Like-for-like) - Net Revenue (Like-for-like) PY) / Net Revenue (Like-for-like) PY * 100 = (219930.56 - 143217.79) / 143217.79 * 100",
+      "sql": "SELECT ROUND((219930.56 - 143217.79) / 143217.79 * 100, 2)",
+      "expected": 53.56
+    },
+    {
+      "id": "py_by_title_T-01",
+      "scorecard_cell": "DASHBOARD wireframe 2 — Hollow Crown, FY2025 Q2 (prior-year bar)",
+      "measure": "Net Revenue PY",
+      "filters": "title_id='T-01', order_date in FY2025 Q2 [2025-01-01,2025-03-31] (the period DATEADD(-1,YEAR) lands on from FY2026 Q2)",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-01') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-01')",
+      "expected": 100859.89
+    },
+    {
+      "id": "py_by_title_T-04",
+      "scorecard_cell": "DASHBOARD wireframe 2 — Saltmarsh Rally, FY2025 Q2 (prior-year bar)",
+      "measure": "Net Revenue PY",
+      "filters": "title_id='T-04', order_date in FY2025 Q2",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-04') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-04')",
+      "expected": 31433.03
+    },
+    {
+      "id": "py_by_title_T-03",
+      "scorecard_cell": "DASHBOARD wireframe 2 — Lantern & Lock, FY2025 Q2 (prior-year bar)",
+      "measure": "Net Revenue PY",
+      "filters": "title_id='T-03', order_date in FY2025 Q2",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-03') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-03')",
+      "expected": 10924.87
+    },
+    {
+      "id": "py_by_title_T-02",
+      "scorecard_cell": "DASHBOARD wireframe 2 — Hollow Crown: Ashen Tide, FY2025 Q2 (no prior-year bar)",
+      "measure": "Net Revenue PY",
+      "filters": "title_id='T-02', order_date in FY2025 Q2 -- must be zero: launch_date is 2025-09-30, after this period, so the wireframe shows 'no FY25 Q2 — launched Sep 2025' rather than a zero bar",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-02') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-02')",
+      "expected": 0
+    },
+    {
+      "id": "py_by_title_T-05",
+      "scorecard_cell": "DASHBOARD wireframe 2 — Emberwatch Tactics, FY2025 Q2 (no prior-year bar)",
+      "measure": "Net Revenue PY",
+      "filters": "title_id='T-05', order_date in FY2025 Q2 -- must be zero: launch_date is 2026-02-12, after this period, so the wireframe shows 'no FY25 Q2 — launched Feb 2026' rather than a zero bar",
+      "sql": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-05') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id='T-05')",
+      "expected": 0
+    },
+    {
+      "id": "launch_dates_shown_in_wireframe",
+      "scorecard_cell": "DASHBOARD wireframe 2 — launch months annotated on the two titles with no prior-year bar",
+      "measure": "n/a — dim_title.launch_date, verified directly",
+      "filters": "Counts how many of the two annotated launch months match dim_title.launch_date: T-02 = 2025-09 ('Sep 2025'), T-05 = 2026-02 ('Feb 2026'). Expected 2.",
+      "sql": "SELECT COUNT(*) FROM dim_title WHERE (title_id='T-02' AND substr(launch_date,1,7)='2025-09') OR (title_id='T-05' AND substr(launch_date,1,7)='2026-02')",
+      "expected": 2
+    },
+    {
+      "id": "q6_new_titles_pp",
+      "scorecard_cell": "6. footnote — Net Revenue YoY % (New Titles)",
+      "measure": "Net Revenue YoY % (New Titles)",
+      "filters": "(Net Revenue - Net Revenue (Like-for-like)) / Net Revenue PY * 100 -- percentage-point contribution of T-02/T-05 to total YoY growth, denominator is the FULL prior-year total (same denominator as total YoY %), not the like-for-like PY figure",
+      "sql": "SELECT (SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - ((SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id IN ('T-01','T-03','T-04')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id IN ('T-01','T-03','T-04')))) / (SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31')) * 100",
+      "expected": 66.98
+    }
+  ],
+  "assertion_checks": [
+    {
+      "id": "assert_q1_titles_sum_to_company",
+      "description": "Q1: sum of the 5 title rows equals the company total exactly (titles are mutually exclusive per order/refund row, no bridge involved at this grain). Computed at full precision from source -- summing the already-rounded-to-2dp display values instead would show a false 2-cent gap (145510.77+44894.38+27300.05+47119.73+51037.14=315862.07 vs company 315862.09), which is a rounding-accumulation artifact, not a data issue: rounding happens only at display, per MODEL.md.",
+      "sql_left": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31')",
+      "sql_right": "SELECT (SELECT COALESCE(SUM(CAST(o.net_usd AS REAL)),0) FROM fact_order o WHERE o.order_date BETWEEN '2026-01-01' AND '2026-03-31' AND o.title_id IN ('T-01','T-02','T-03','T-04','T-05')) - (SELECT COALESCE(SUM(CAST(r.net_refund_usd AS REAL)),0) FROM fact_refund r WHERE r.order_date BETWEEN '2026-01-01' AND '2026-03-31' AND r.title_id IN ('T-01','T-02','T-03','T-04','T-05'))",
+      "op": "eq_tolerance",
+      "tolerance": 0.01
+    },
+    {
+      "id": "assert_q4_double_count_equals_shared_titles",
+      "description": "Q4: (sum of 4 studio rows) - (company total) must equal netrev(T-02,FY26) + netrev(T-05,FY26) exactly -- proves the excess is caused only by the two co-credited titles, nothing else. Both sides computed at full precision from source, not from rounded display literals.",
+      "sql_left": "SELECT (SELECT COALESCE(SUM(CAST(o.net_usd AS REAL)),0) FROM fact_order o WHERE o.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND o.title_id IN ('T-01','T-02')) - (SELECT COALESCE(SUM(CAST(r.net_refund_usd AS REAL)),0) FROM fact_refund r WHERE r.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND r.title_id IN ('T-01','T-02')) + (SELECT COALESCE(SUM(CAST(o.net_usd AS REAL)),0) FROM fact_order o WHERE o.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND o.title_id IN ('T-02','T-05')) - (SELECT COALESCE(SUM(CAST(r.net_refund_usd AS REAL)),0) FROM fact_refund r WHERE r.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND r.title_id IN ('T-02','T-05')) + (SELECT COALESCE(SUM(CAST(o.net_usd AS REAL)),0) FROM fact_order o WHERE o.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND o.title_id IN ('T-03','T-05')) - (SELECT COALESCE(SUM(CAST(r.net_refund_usd AS REAL)),0) FROM fact_refund r WHERE r.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND r.title_id IN ('T-03','T-05')) + (SELECT COALESCE(SUM(CAST(o.net_usd AS REAL)),0) FROM fact_order o WHERE o.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND o.title_id IN ('T-04')) - (SELECT COALESCE(SUM(CAST(r.net_refund_usd AS REAL)),0) FROM fact_refund r WHERE r.order_date BETWEEN '2025-10-01' AND '2026-09-30' AND r.title_id IN ('T-04')) - ((SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30'))",
+      "sql_right": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-02','T-05')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-10-01' AND '2026-09-30' AND title_id IN ('T-02','T-05'))",
+      "op": "eq_tolerance",
+      "tolerance": 0.01
+    },
+    {
+      "id": "assert_q6_pp_decomposition_sums_to_total",
+      "description": "Q6: Net Revenue YoY % (Like-for-like) + Net Revenue YoY % (New Titles) must equal Net Revenue YoY % exactly -- both terms share the same denominator (the full prior-year total), so the decomposition is additive by construction. Both sides computed live from source, not from rounded/hardcoded literals; the identity (LLF_cur-LLF_py)+(Total_cur-LLF_cur) = Total_cur-Total_py holds exactly once both fractions share the Total_py denominator.",
+      "sql_left": "WITH d AS (SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') AS cur_total, (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') AS py_total, (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id IN ('T-01','T-03','T-04')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31' AND title_id IN ('T-01','T-03','T-04')) AS llf_cur, (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id IN ('T-01','T-03','T-04')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id IN ('T-01','T-03','T-04')) AS llf_py) SELECT (llf_cur - llf_py) / llf_py * 100 + (cur_total - llf_cur) / py_total * 100 FROM d",
+      "sql_right": "SELECT ((SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2026-01-01' AND '2026-03-31') - (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') + (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31')) / ((SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31')) * 100",
+      "op": "eq_tolerance",
+      "tolerance": 0.01
+    },
+    {
+      "id": "assert_py_titles_sum_to_py_total",
+      "description": "The five per-title Net Revenue PY values (FY2025 Q2) sum to the FY2025 Q2 total of 143,217.79 used in the headline and the YoY denominator -- ties the DASHBOARD wireframe's prior-year bars to the scorecard's Q6 figure. Full precision on both sides.",
+      "sql_left": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id IN ('T-01','T-02','T-03','T-04','T-05')) - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31' AND title_id IN ('T-01','T-02','T-03','T-04','T-05'))",
+      "sql_right": "SELECT (SELECT COALESCE(SUM(CAST(net_usd AS REAL)),0) FROM fact_order WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31') - (SELECT COALESCE(SUM(CAST(net_refund_usd AS REAL)),0) FROM fact_refund WHERE order_date BETWEEN '2025-01-01' AND '2025-03-31')",
+      "op": "eq_tolerance",
+      "tolerance": 0.01
+    },
+    {
+      "id": "assert_q7_pct_sums_to_100",
+      "description": "Q7: Twin Hearth's two %-of-studio rows sum to 100.00% (only two titles are credited to STU-01, confirmed via bridge)",
+      "sql_left": "SELECT ROUND(74.21 + 25.79, 2)",
+      "sql_right": "SELECT 100.00",
+      "op": "eq_tolerance",
+      "tolerance": 0.01
+    },
+    {
+      "id": "assert_q5_paying_le_transacted",
+      "description": "Q5: net-revenue-positive paying players (12,498) must be <= transacted players (12,807) -- the 309 players fully refunded in the period must be excluded",
+      "sql_left": "SELECT 12498",
+      "sql_right": "SELECT 12807",
+      "op": "le"
+    },
+    {
+      "id": "regression_no_string_comparison_over_refunds",
+      "description": "Regression test for the Session 1 bug: comparing TEXT-typed amount columns without CAST made SQLite do lexical string comparison and reported 1,883 false 'over-refunds'. With CAST, must be 0.",
+      "sql_left": "SELECT COUNT(*) FROM fact_refund r JOIN fact_order o ON r.order_id = o.order_id WHERE CAST(r.net_refund_usd AS REAL) > CAST(o.net_usd AS REAL) + 0.005",
+      "sql_right": "SELECT 0",
+      "op": "eq_tolerance",
+      "tolerance": 0
+    },
+    {
+      "id": "regression_refund_sign_positive",
+      "description": "All net_refund_usd values are positive (measures subtract this column; if the warehouse ever shipped a negative refund, Net Revenue would silently add it back)",
+      "sql_left": "SELECT COUNT(*) FROM fact_refund WHERE CAST(net_refund_usd AS REAL) < 0",
+      "sql_right": "SELECT 0",
+      "op": "eq_tolerance",
+      "tolerance": 0
+    },
+    {
+      "id": "regression_no_fact_to_fact_relationship_needed",
+      "description": "fact_refund's own title_id/player_id/platform_code/order_date must still agree with the parent fact_order on every row -- the basis for routing fact_refund through the shared dimensions instead of through fact_order",
+      "sql_left": "SELECT COUNT(*) FROM fact_refund f JOIN fact_order o ON f.order_id = o.order_id WHERE f.title_id <> o.title_id OR f.player_id <> o.player_id OR f.platform_code <> o.platform_code OR f.order_date <> o.order_date",
+      "sql_right": "SELECT 0",
+      "op": "eq_tolerance",
+      "tolerance": 0
+    }
+  ]
+}

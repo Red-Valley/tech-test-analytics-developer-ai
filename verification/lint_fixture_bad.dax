@@ -1,0 +1,60 @@
+// Regression fixture: every defect this exercise actually hit, plus synthetic ones.
+
+Net Revenue =
+[Order Net Revenue] - [Refund Net Amount]
+-- needs to exist so refs resolve
+
+Order Net Revenue =
+SUM ( fact_order[net_usd] )
+-- base
+
+Refund Net Amount =
+SUM ( fact_refund[net_refund_usd] )
+-- base
+
+Net Revenue PY =
+CALCULATE ( [Net Revenue], DATEADD ( dim_date[date], -1, YEAR ) )
+-- base
+
+Titles Active Both Periods =
+VAR CurrentTitles = FILTER ( VALUES ( dim_title[title_id] ), [Net Revenue] > 0 )
+VAR PriorTitles = FILTER ( VALUES ( dim_title[title_id] ), [Net Revenue PY] > 0 )
+RETURN INTERSECT ( CurrentTitles, PriorTitles )
+-- DEFECT 1: measure returns a table
+
+Net Revenue (Like-for-like) =
+CALCULATE ( [Net Revenue], [Titles Active Both Periods] )
+-- DEFECT 2: measure reference used as a CALCULATE filter
+
+Studio Net Revenue =
+CALCULATE ( [Net Revenue], CROSSFILTER ( bridge_title_studio[title_id], dim_title[title_id], BothDirections ) )
+-- DEFECT 3: invalid CROSSFILTER enum member (the subagent's bug)
+
+Bad Column Ref =
+SUM ( fact_order[net_revenue_usd] )
+-- DEFECT 4: column does not exist
+
+Bad Table Ref =
+COUNTROWS ( FILTER ( dim_games, [Net Revenue] > 0 ) )
+-- DEFECT 5: table does not exist
+
+Bad Measure Ref =
+DIVIDE ( [Net Revenue], [Nonexistent Measure] )
+-- DEFECT 6: measure reference does not resolve
+
+Bad Function =
+TOTALREVENUEX ( fact_order, [Net Revenue] )
+-- DEFECT 7: not a DAX function
+
+Unbalanced Parens =
+CALCULATE ( [Net Revenue], ALL ( dim_title )
+-- DEFECT 8: unbalanced parentheses
+
+Unused Var =
+VAR Unused = FILTER ( dim_player, [Net Revenue] > 0 )
+RETURN [Net Revenue]
+-- DEFECT 9: VAR declared but never used
+
+Var No Return =
+VAR Something = [Net Revenue]
+-- DEFECT 10: VAR with no RETURN

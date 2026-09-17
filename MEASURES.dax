@@ -1,0 +1,151 @@
+// ============================================================================
+// MEASURES.dax — Twin Hearth Studios analytics layer
+// Layered: Base (single fact) -> Date-role -> Counts/ratios -> Studio (bridge) -> Time intelligence
+// One line of comment per measure states what business question it answers.
+//
+// FORMAT STRINGS: the four ratio measures (% of Studio Net Revenue, Net Revenue
+// YoY %, Net Revenue YoY % (Like-for-like), Net Revenue YoY % (New Titles)) use
+// DIVIDE and therefore return a decimal ratio — 1.2055, not 120.55. Each carries
+// a Percentage format string ("0.00%") in the model, which is what renders them
+// as the 120.55 / 74.21% figures printed in SCORECARD.md. The SQL proofs in
+// verification/checks.json multiply by 100 to match that rendered form.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// LAYER 0 — Base measures. Single fact, order-date filter context (the default
+// active relationship), no studio/bridge involvement yet.
+// ---------------------------------------------------------------------------
+
+Order Net Revenue =
+SUM ( fact_order[net_usd] )
+-- Gross-of-refund revenue recognised on order_date. Deliberately NOT filtered by order_status: see MODEL.md #1 — a "completed" filter would double-count the deduction on the 4,800 orders that are completed but partially refunded.
+
+Refund Net Amount =
+SUM ( fact_refund[net_refund_usd] )
+-- Refund value recognised on the original order_date (Finance basis). Source column is always positive across all 7,722 rows, so this is subtracted, never added.
+
+Net Revenue =
+[Order Net Revenue] - [Refund Net Amount]
+-- The company's one revenue measure: net of refunds and store cut, recognised on order date. Backs Q1, Q4, Q5, Q6, Q7 — the same measure answers all of them, only the filter context changes.
+
+// ---------------------------------------------------------------------------
+// LAYER 1 — Alternate date-role measures. Both invoke the inactive
+// relationship for their fact table; everything else stays on order-date by
+// default so the common case (Layer 0) never has to think about them.
+// ---------------------------------------------------------------------------
+
+Cash Settled =
+CALCULATE (
+    [Order Net Revenue],
+    USERELATIONSHIP ( fact_order[settlement_date], dim_date[date] )
+)
+-- What actually hit the bank in the selected period, on settlement_date — not what was sold in that period. Answers Q2.
+
+Refunds (Treasury) =
+CALCULATE (
+    [Refund Net Amount],
+    USERELATIONSHIP ( fact_refund[refund_date], dim_date[date] )
+)
+-- Cash given back in the selected period, dated on the refund itself (Treasury basis), not on the original order. Answers Q3.
+
+// ---------------------------------------------------------------------------
+// LAYER 2 — Counts and ratios built on Layer 0.
+// ---------------------------------------------------------------------------
+
+Paying Players (Transacted) =
+DISTINCTCOUNT ( fact_order[player_id] )
+-- Anyone who placed an order in the selected period, whatever happened to it afterwards. Reporting-only footnote figure (12,807 for FY2026 Q2) — NOT the §5 denominator.
+
+Paying Players =
+COUNTROWS (
+    FILTER ( dim_player, ROUND ( [Net Revenue], 4 ) > 0 )
+)
+-- A player counts as "paying" only if their net revenue for the period is still positive after refunds are netted off. Iterates dim_player (not fact_order[player_id]) specifically so a player whose whole order was refunded drops out of the count. ROUND(...,4) here guards the boolean test against floating-point representation noise (source data itself never carries more than 4 decimals) — it is not a display rounding and does not change the value any measure returns. Returns BLANK, not 0, for a period with no qualifying rows; DIVIDE then yields BLANK rather than a divide-by-zero. Answers Q5 (denominator) — one of the two decisions I am least sure about (see AI_WORKFLOW.md).
+
+Revenue per Paying Player =
+DIVIDE ( [Net Revenue], [Paying Players] )
+-- Net revenue divided by players who still had positive net revenue after refunds. Answers Q5.
+
+// ---------------------------------------------------------------------------
+// LAYER 3 — Studio measures. Everything below crosses the many-to-many
+// bridge and depends on the bidirectional dim_title <-> bridge_title_studio
+// relationship (MODEL.md, "the bridge direction decision").
+// ---------------------------------------------------------------------------
+
+Company Net Revenue =
+CALCULATE (
+    [Net Revenue],
+    ALL ( dim_studio ),
+    ALL ( bridge_title_studio ),
+    ALL ( dim_title )
+)
+-- The true company total: [Net Revenue] with every studio/bridge/title filter stripped, so it reads correctly next to a per-studio breakdown regardless of what else is on the visual. Answers Q1's company row and Q4's company row.
+
+Studio Credit Total =
+SUMX (
+    VALUES ( dim_studio[studio_id] ),
+    [Net Revenue]
+)
+-- Sum of each studio's own Net Revenue, one studio at a time — co-credited titles are deliberately re-counted once per studio that shares the credit. This is Q4's "sum of the four rows above," and it is expected to exceed Company Net Revenue by design.
+
+Studio Total Net Revenue =
+CALCULATE (
+    [Net Revenue],
+    ALL ( dim_title ),
+    ALL ( bridge_title_studio ),
+    VALUES ( dim_studio[studio_id] )
+)
+-- The studio total, held fixed while a visual iterates that studio's titles. Clears the title and bridge filters, then re-applies the currently selected studio with VALUES(dim_studio[studio_id]), so the studio scope is stated explicitly and never depends on filter-propagation details. Returns the total of whichever studios are in scope. With one studio in scope (the §7 case, and every studio-lead session under RLS) that is the studio's own total; with none in scope it is the company total, which is the correct reading of "share" at that grain. The many-to-many-safe denominator for Q7.
+
+% of Studio Net Revenue =
+DIVIDE ( [Net Revenue], [Studio Total Net Revenue] )
+-- Each title's share of the studio total, as a ratio rendered as a percentage by its format string. Denominator is the total of whichever studios are in scope. With one studio in scope (the §7 case, and every studio-lead session under RLS) that is the studio's own total; with none in scope it is the company total, which is the correct reading of "share" at that grain. Answers Q7.
+
+// ---------------------------------------------------------------------------
+// LAYER 4 — Time intelligence, built on Layer 0.
+// ---------------------------------------------------------------------------
+
+Net Revenue PY =
+CALCULATE (
+    [Net Revenue],
+    DATEADD ( dim_date[date], -1, YEAR )
+)
+-- Net Revenue for the same period one calendar year earlier. Works at any grain on this calendar because every fiscal quarter is a fixed calendar-month range (Q2 is always Jan-Mar), so a one-year shift always lands on the equivalent fiscal period. Verified that the shift target is fully covered: calendar year 2025 is present in dim_date at 365/365 days.
+
+Net Revenue YoY % =
+DIVIDE ( [Net Revenue] - [Net Revenue PY], [Net Revenue PY] )
+-- Growth of Net Revenue against the same period one year earlier, as a ratio (format string renders it as a percentage). Answers Q6 when the page is on a fiscal quarter.
+
+Titles Active Both Periods =
+COUNTROWS ( FILTER ( VALUES ( dim_title[title_id] ), [Net Revenue] > 0 && [Net Revenue PY] > 0 ) )
+-- Number of titles with net revenue in both the selected period and the same period a year earlier. Returns BLANK, not 0, for a period with no qualifying rows; DIVIDE then yields BLANK rather than a divide-by-zero.
+
+Net Revenue (Like-for-like) =
+VAR ComparableTitles = FILTER ( VALUES ( dim_title[title_id] ), [Net Revenue] > 0 && [Net Revenue PY] > 0 )
+RETURN CALCULATE ( [Net Revenue], ComparableTitles )
+-- Net Revenue for only the titles that were active in both the current and prior-year period — strips out the effect of titles launching mid-comparison. Supports the Q6 growth decomposition.
+
+Net Revenue (Like-for-like) PY =
+VAR ComparableTitles = FILTER ( VALUES ( dim_title[title_id] ), [Net Revenue] > 0 && [Net Revenue PY] > 0 )
+RETURN CALCULATE ( [Net Revenue PY], ComparableTitles )
+-- Prior-year Net Revenue for the same title set used in Net Revenue (Like-for-like), so numerator and denominator are evaluated over an identical set of titles.
+
+Net Revenue YoY % (Like-for-like) =
+DIVIDE ( [Net Revenue (Like-for-like)] - [Net Revenue (Like-for-like) PY], [Net Revenue (Like-for-like) PY] )
+-- Growth for only the titles active in both the selected period and the same period a year earlier — isolates organic growth from new-title contribution. A ratio, rendered as a percentage by its format string. Backs the Q6 footnote so that claim is measure-backed, not asserted.
+
+Net Revenue YoY % (New Titles) =
+DIVIDE ( [Net Revenue] - [Net Revenue (Like-for-like)], [Net Revenue PY] )
+-- The percentage-point contribution to total YoY growth that comes from titles NOT present in the prior-year period — the numerator is their current-period revenue, but the denominator is the FULL prior-year total (same denominator as total YoY %, not the like-for-like PY figure), so this and Net Revenue YoY % (Like-for-like) are additive: their sum equals Net Revenue YoY % exactly. A ratio, rendered as a percentage by its format string. Deliberately NOT "new titles' share of current revenue" (that's a different, non-additive statistic — see MODEL.md/SCORECARD.md for the distinction).
+
+// ---------------------------------------------------------------------------
+// LAYER 5 — RLS-safe presentation measure. Depends on the Studio Lead / RLS
+// design in DASHBOARD.md, not needed for the scorecard, only for the page.
+// ---------------------------------------------------------------------------
+
+Company Net Revenue (Page-Safe) =
+VAR IsStudioLead =
+    NOT ISEMPTY ( FILTER ( sec_user_studio, sec_user_studio[user_principal_name] = USERPRINCIPALNAME () ) )
+RETURN
+    IF ( IsStudioLead, BLANK (), [Company Net Revenue] )
+-- ALL()/REMOVEFILTERS() never bypass row-level security, so under the Studio Lead role [Company Net Revenue] would silently return that lead's own studio total under a "Company" label. This identifies a studio lead directly from the disconnected sec_user_studio mapping table (a row exists for them) rather than by counting how many studios are still visible, and blanks the tile instead of showing a mislabelled number. The Head/CFO have no row in sec_user_studio, so they get the real company figure. Depends on sec_user_studio, the disconnected RLS mapping table defined in DASHBOARD.md — it is not part of the warehouse. See DASHBOARD.md, "The company-figure trap under RLS."
