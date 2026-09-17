@@ -47,7 +47,7 @@ nobody misreads it.
 | | Value |
 |---|---|
 | Paying players | |
-| Revenue per paying player | |
+| Net revenue per paying player | |
 
 State the formula you used.
 

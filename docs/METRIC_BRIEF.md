@@ -35,11 +35,12 @@ Rules you would have been told in your first week. None of them are up for debat
 4. **How is each studio doing?** Net revenue by studio for FY2026 — and, separately, the company's
    FY2026 net revenue. Those two things get put on the same slide constantly and I need it to stop
    being confusing.
-5. **What is a paying player worth?** Revenue per paying player for FY2026 Q2, and how many paying
-   players that was.
-6. **Are we growing?** FY2026 Q2 against the same quarter of the prior fiscal year, as a percentage.
+5. **What is a paying player worth?** Net revenue per paying player for FY2026 Q2, and how many
+   paying players that was.
+6. **Are we growing?** Net revenue for FY2026 Q2 against the same quarter of the prior fiscal year,
+   as a percentage.
 7. **Inside Twin Hearth Studios, what is carrying the year?** Each of its titles as a share of that
-   studio's FY2026 revenue.
+   studio's FY2026 net revenue.
 
 ## What I actually want on the screen
 
