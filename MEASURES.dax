@@ -1,0 +1,87 @@
+## BASE MEASURES
+1. 
+// BASE MEASURES
+Gross revenue from orders, net of the store's cut (net_usd already excludes it)
+Gross Order Revenue = SUM(fact_order[net_usd])
+
+Total refunds, net of the store's fee credit
+Refunds = SUM(fact_refund[net_refund_usd])
+
+Net revenue: what the company actually keeps
+Net Revenue = [Gross Order Revenue] - [Refunds]
+
+2.
+// Gross revenue using settlement date instead of order date
+Settled Revenue = 
+CALCULATE(
+    [Gross Order Revenue],
+    USERELATIONSHIP(fact_order[settlement_date], dim_date[date])
+)
+
+
+3.
+//  Refunds counted on the date the refund happened (Treasury's view)
+Refunds Treasury = 
+CALCULATE(
+    [Refunds],
+    USERELATIONSHIP(fact_refund[refund_date], dim_date[date])
+)
+
+4.
+Net revenue credited to each studio — co-developed titles count in
+// full for every studio that worked on them (per brief). CROSSFILTER opens
+// the bridge->title relationship in both directions only for this measure,
+// so [Net Revenue] (company total) stays unaffected by the double count.
+Net Revenue by Studio = 
+CALCULATE(
+    [Net Revenue],
+    CROSSFILTER(bridge_title_studio[title_id], dim_title[title_id], BOTH)
+)
+
+5.
+// Explicit sum across studios — do NOT rely on a visual's automatic Total
+// row for this measure, since CROSSFILTER can make it non-additive in
+// table/matrix totals. This SUMX iterates studios one by one instead.
+Sum of Studio Totals = 
+SUMX(
+    VALUES(dim_studio[studio_name]),
+    [Net Revenue by Studio]
+)
+
+6.
+Count of distinct players who placed at least one order
+Paying Players = DISTINCTCOUNT(fact_order[player_id])
+
+Average net revenue per paying player
+Revenue per Paying Player = DIVIDE([Net Revenue], [Paying Players])
+
+7.
+Net revenue fixed to FY2026 Q2, regardless of page-level filters
+Net Revenue FY26 Q2 = 
+CALCULATE([Net Revenue], dim_date[fiscal_quarter] = "FY2026 Q2")
+
+Net revenue fixed to FY2025 Q2, for year-over-year comparison
+Net Revenue FY25 Q2 = 
+CALCULATE([Net Revenue], dim_date[fiscal_quarter] = "FY2025 Q2")
+
+Year-over-year growth, same fiscal quarter
+Growth % FY26 Q2 vs FY25 Q2 = 
+DIVIDE(
+    [Net Revenue FY26 Q2] - [Net Revenue FY25 Q2],
+    [Net Revenue FY25 Q2]
+)
+
+8.
+Each title's share of its studio's total revenue.
+ALL(dim_title) removes the title filter so the denominator is always
+the studio's full total, not affected by which title row is showing.
+% of Studio Revenue = 
+DIVIDE(
+    [Net Revenue by Studio],
+    CALCULATE([Net Revenue by Studio], ALL(dim_title))
+)
+
+9.
+
+10.
+
