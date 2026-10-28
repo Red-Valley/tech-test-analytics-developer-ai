@@ -1,0 +1,51 @@
+table dim_studio
+	lineageTag: a96e1616-a7f3-4b07-99cc-370dcc8465c3
+
+	column studio_id
+		dataType: string
+		isHidden
+		lineageTag: f072fe18-32b4-4966-af25-fb759ab698d4
+		summarizeBy: none
+		sourceColumn: studio_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column studio_name
+		dataType: string
+		lineageTag: 563919ca-231c-4571-8467-ac4bade451cf
+		summarizeBy: none
+		sourceColumn: studio_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: b0465f10-f0f8-42d4-94e1-4f2d6fb3aaa2
+		summarizeBy: none
+		sourceColumn: region
+
+		annotation SummarizationSetBy = Automatic
+
+	column founded_year
+		dataType: int64
+		formatString: 0
+		lineageTag: a2be529a-aa43-4052-b2ad-5424c3be7a86
+		summarizeBy: sum
+		sourceColumn: founded_year
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_studio = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_studio.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"studio_id", type text}, {"studio_name", type text}, {"region", type text}, {"founded_year", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

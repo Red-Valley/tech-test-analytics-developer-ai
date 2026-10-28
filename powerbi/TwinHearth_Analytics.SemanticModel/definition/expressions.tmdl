@@ -1,0 +1,6 @@
+/// Folder containing the gold-layer CSVs (the repo's data/ folder), with a trailing backslash. Change this one value to refresh the model from another clone.
+expression DataFolder = "D:\Interview-Project-AI\red-valley-test\tech-test-analytics-developer-ai-angra8410\data\" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: bd7f6965-3329-408c-b567-7991fe593d76
+
+	annotation PBI_ResultType = Text
+

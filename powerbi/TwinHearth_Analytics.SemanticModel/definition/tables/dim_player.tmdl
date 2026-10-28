@@ -1,0 +1,61 @@
+table dim_player
+	lineageTag: 150a0609-a07c-4afa-8336-d715429a70ae
+
+	column player_id
+		dataType: string
+		isHidden
+		lineageTag: 67f9cf7e-3c97-46db-95bd-34964fd0c7bf
+		summarizeBy: none
+		sourceColumn: player_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column country_code
+		dataType: string
+		lineageTag: eed60ada-0309-4f50-82e0-55f6e1707177
+		summarizeBy: none
+		sourceColumn: country_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column currency_code
+		dataType: string
+		lineageTag: 828c8815-8255-410b-8f55-0942b4f33fff
+		summarizeBy: none
+		sourceColumn: currency_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column signup_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 65f8ca03-9e5d-450e-95c2-3296d37ea9d2
+		summarizeBy: none
+		sourceColumn: signup_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column acquisition_channel
+		dataType: string
+		lineageTag: dae84357-4fa4-4179-8b8a-86b86b07f6a4
+		summarizeBy: none
+		sourceColumn: acquisition_channel
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_player = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_player.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"signup_date", type date}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

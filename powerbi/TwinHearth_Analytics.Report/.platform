@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "TwinHearth_Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "85ab1077-5d69-477a-95fd-5bcfe1957139"
+  }
+}

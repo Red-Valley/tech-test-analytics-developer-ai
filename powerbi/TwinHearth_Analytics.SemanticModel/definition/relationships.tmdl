@@ -1,0 +1,52 @@
+relationship fact_order_order_date_dim_date_date
+	fromColumn: fact_order.order_date
+	toColumn: dim_date.date
+
+relationship fact_order_settlement_date_dim_date_date
+	isActive: false
+	fromColumn: fact_order.settlement_date
+	toColumn: dim_date.date
+
+relationship fact_refund_order_date_dim_date_date
+	fromColumn: fact_refund.order_date
+	toColumn: dim_date.date
+
+relationship fact_refund_refund_date_dim_date_date
+	isActive: false
+	fromColumn: fact_refund.refund_date
+	toColumn: dim_date.date
+
+relationship fact_order_title_id_dim_title_title_id
+	fromColumn: fact_order.title_id
+	toColumn: dim_title.title_id
+
+relationship fact_refund_title_id_dim_title_title_id
+	fromColumn: fact_refund.title_id
+	toColumn: dim_title.title_id
+
+relationship fact_order_platform_code_dim_platform_platform_code
+	fromColumn: fact_order.platform_code
+	toColumn: dim_platform.platform_code
+
+relationship fact_refund_platform_code_dim_platform_platform_code
+	fromColumn: fact_refund.platform_code
+	toColumn: dim_platform.platform_code
+
+relationship fact_order_player_id_dim_player_player_id
+	fromColumn: fact_order.player_id
+	toColumn: dim_player.player_id
+
+relationship fact_refund_player_id_dim_player_player_id
+	fromColumn: fact_refund.player_id
+	toColumn: dim_player.player_id
+
+relationship bridge_title_studio_studio_id_dim_studio_studio_id
+	fromColumn: bridge_title_studio.studio_id
+	toColumn: dim_studio.studio_id
+
+relationship bridge_title_studio_title_id_dim_title_title_id
+	crossFilteringBehavior: bothDirections
+	securityFilteringBehavior: bothDirections
+	fromColumn: bridge_title_studio.title_id
+	toColumn: dim_title.title_id
+

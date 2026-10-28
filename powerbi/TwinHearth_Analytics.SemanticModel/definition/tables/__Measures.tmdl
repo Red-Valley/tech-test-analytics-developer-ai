@@ -1,0 +1,112 @@
+table __Measures
+	lineageTag: 5727b1c6-ec75-4146-9f6d-f195153fb061
+
+	measure 'Order Net' = SUM(fact_order[net_usd])
+		lineageTag: 33d5c7ef-eacd-4b28-b4c6-6d34b0e15603
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Refund Net' = SUM(fact_refund[net_refund_usd])
+		lineageTag: 0c672540-b5f3-49d3-8e9c-5620df586f25
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Net Revenue' = [Order Net] - [Refund Net]
+		lineageTag: fc6743e1-2329-43ec-8f83-a9c285ba8e1e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Net Revenue Settled' = ```
+			
+			        CALCULATE(
+			            [Order Net],
+			            USERELATIONSHIP(fact_order[settlement_date],dim_date[date]))
+			```
+		lineageTag: 0f16768e-ee32-46f0-a1d7-9fd9bd72a0be
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Refunds by Refund Date' = ```
+			
+			    CALCULATE(
+			        [Refund Net],
+			        USERELATIONSHIP(fact_refund[refund_date],dim_date[date]))
+			```
+		lineageTag: 81dc3913-edbb-4b6e-ab0b-12da1cd8ffb3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Company Net Revenue' = ```
+			
+			    CALCULATE(
+			        [Net Revenue],
+			        REMOVEFILTERS(dim_studio))
+			```
+		lineageTag: 33c1cd96-ab0f-4455-9845-5712b053e84e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure '% of Studio Net Revenue' = ```
+			
+			    DIVIDE([Net Revenue],
+			    CALCULATE(
+			        [Net Revenue], 
+			        REMOVEFILTERS(dim_title)))
+			```
+		lineageTag: 703f873a-7358-443b-8427-23038dae91b4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Paying Players' =
+			
+			COUNTROWS (
+			    FILTER ( VALUES ( dim_player[player_id] ), [Net Revenue] > 0 )
+			)
+		formatString: 0
+		lineageTag: d5d46d95-43d7-42d0-bbed-7ad11aecfe34
+
+	measure 'Net Revenue per Paying Player' =
+			
+			DIVIDE ( [Net Revenue], [Paying Players] )
+		lineageTag: a0924d67-0bf7-4c25-868d-63d8ed1d1b61
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Net Revenue PY' =
+			
+			CALCULATE (
+			    [Net Revenue],
+			    SAMEPERIODLASTYEAR ( dim_date[date] )
+			)
+		lineageTag: bbcf869a-9a94-4bb2-9107-7df9c31e4aff
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Net Revenue YoY %' =
+			
+			VAR CurrentValue = [Net Revenue]
+			VAR PriorValue = [Net Revenue PY]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( CurrentValue ) && NOT ISBLANK ( PriorValue ),
+			        DIVIDE ( CurrentValue - PriorValue, PriorValue )
+			    )
+		lineageTag: 23b0128f-87ca-4de7-bd27-46904d266faa
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		formatString: 0
+		lineageTag: 78568388-bf5c-463c-bfe1-a54709388ca1
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition __Measures = calculated
+		mode: import
+		source = {0}
+
+	annotation PBI_Id = 786c500670234de784ace045288ca590
+

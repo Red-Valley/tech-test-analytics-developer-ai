@@ -1,0 +1,92 @@
+// =====================================================================
+// MEASURES.dax — Twin Hearth Studios semantic model
+// Source of truth: powerbi/TwinHearth_Analytics.SemanticModel (TMDL); all measures live in the __Measures table.
+// Convention: base measures first; every other measure is built on them.
+// Each measure has a one-line comment saying what business question it answers.
+// =====================================================================
+
+
+// ---------- 1. Base measures (revenue recognised on the ORDER date) ----------
+
+// Order value after the store's cut, recognised on the order date.
+Order Net =
+SUM ( fact_order[net_usd] )
+
+// Refunds after the store's cut, dated by the ORIGINAL order date (Finance view; active relationship).
+Refund Net =
+SUM ( fact_refund[net_refund_usd] )
+
+// Q1, Q4–Q7 — What we keep: order value less refunds less the store's cut.
+// Refunds always come from fact_refund; order_status is never used (partial refunds keep status 'completed').
+Net Revenue =
+[Order Net] - [Refund Net]
+
+
+// ---------- 2. Cash & Treasury views (alternate date roles) ----------
+
+// Q2 — Cash that landed: net order value dated by when the store SETTLED it (inactive relationship on settlement_date).
+Net Revenue Settled =
+CALCULATE (
+    [Order Net],
+    USERELATIONSHIP ( fact_order[settlement_date], dim_date[date] )
+)
+
+// Q3 — Refunds as Treasury counts them: dated by when the refund HAPPENED (inactive relationship on refund_date).
+Refunds by Refund Date =
+CALCULATE (
+    [Refund Net],
+    USERELATIONSHIP ( fact_refund[refund_date], dim_date[date] )
+)
+
+
+// ---------- 3. Studio views (co-development credit) ----------
+
+// Q4 — Company net revenue for the current period/title, ignoring any studio filter.
+// Shown next to studio rows so nobody adds the studios up (co-developed titles are credited to each studio in full).
+Company Net Revenue =
+CALCULATE (
+    [Net Revenue],
+    REMOVEFILTERS ( dim_studio )
+)
+
+// Q7 — Each title's share of its studio's net revenue.
+// Denominator keeps the studio filter and drops the title filter = the studio's full total.
+% of Studio Net Revenue =
+DIVIDE (
+    [Net Revenue],
+    CALCULATE ( [Net Revenue], REMOVEFILTERS ( dim_title ) )
+)
+
+
+// ---------- 4. Players ----------
+
+// Q5 — Players who paid something net of refunds in the period (fully refunded players excluded).
+Paying Players =
+COUNTROWS (
+    FILTER ( VALUES ( dim_player[player_id] ), [Net Revenue] > 0 )
+)
+
+// Q5 — What a paying player is worth: net revenue per paying player.
+Net Revenue per Paying Player =
+DIVIDE ( [Net Revenue], [Paying Players] )
+
+
+// ---------- 5. Time intelligence ----------
+
+// Q6 — Net revenue for the same period one year earlier (e.g. FY2026 Q2 -> FY2025 Q2).
+// Works for fiscal periods because fiscal quarters are fixed calendar months (Q2 = Jan–Mar) and dim_date is marked as the date table.
+Net Revenue PY =
+CALCULATE (
+    [Net Revenue],
+    SAMEPERIODLASTYEAR ( dim_date[date] )
+)
+
+// Q6 — Are we growing? Change vs the same period last year, as a %. Blank when either period has no data (no fake +/-100%).
+Net Revenue YoY % =
+VAR CurrentValue = [Net Revenue]
+VAR PriorValue = [Net Revenue PY]
+RETURN
+    IF (
+        NOT ISBLANK ( CurrentValue ) && NOT ISBLANK ( PriorValue ),
+        DIVIDE ( CurrentValue - PriorValue, PriorValue )
+    )

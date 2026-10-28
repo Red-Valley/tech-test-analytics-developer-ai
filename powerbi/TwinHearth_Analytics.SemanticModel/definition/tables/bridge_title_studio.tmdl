@@ -1,0 +1,42 @@
+table bridge_title_studio
+	isHidden
+	lineageTag: 25237bb3-a5e1-40db-bf15-73a2e8ba7959
+
+	column title_id
+		dataType: string
+		lineageTag: 103790ba-e938-4d09-a4cb-138ec73df66c
+		summarizeBy: none
+		sourceColumn: title_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column studio_id
+		dataType: string
+		lineageTag: 067316bb-42d0-4cc0-bcef-296af8031521
+		summarizeBy: none
+		sourceColumn: studio_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column credit_role
+		dataType: string
+		lineageTag: ccafab95-8327-4cbe-87e3-d82c44869110
+		summarizeBy: none
+		sourceColumn: credit_role
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridge_title_studio = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "bridge_title_studio.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"title_id", type text}, {"studio_id", type text}, {"credit_role", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

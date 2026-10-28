@@ -1,0 +1,43 @@
+table dim_platform
+	lineageTag: 77411ff0-0f42-4b36-89d1-86f711bf6963
+
+	column platform_code
+		dataType: string
+		isHidden
+		lineageTag: c1f338a7-4a10-4ef2-b1a1-4b9a988d920a
+		summarizeBy: none
+		sourceColumn: platform_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column platform_name
+		dataType: string
+		lineageTag: 3e395fd0-322c-4dc9-bdea-5c5d79200f89
+		summarizeBy: none
+		sourceColumn: platform_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column settlement_lag_days
+		dataType: int64
+		formatString: 0
+		lineageTag: fd00151c-b9ff-4d87-b37f-ede6612cb5fd
+		summarizeBy: sum
+		sourceColumn: settlement_lag_days
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_platform = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_platform.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"platform_code", type text}, {"platform_name", type text}, {"settlement_lag_days", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

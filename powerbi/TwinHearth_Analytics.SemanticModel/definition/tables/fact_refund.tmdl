@@ -1,0 +1,128 @@
+table fact_refund
+	lineageTag: a6cdaa2e-3c2f-480f-aaa1-12aafeed3ee7
+
+	column refund_id
+		dataType: string
+		isHidden
+		lineageTag: faa74740-cb4e-480a-94e4-9cb52f7ebc3b
+		summarizeBy: none
+		sourceColumn: refund_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_id
+		dataType: string
+		isHidden
+		lineageTag: 964df5c3-c4de-4eda-836b-cc39c3b4d84c
+		summarizeBy: none
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column refund_date
+		dataType: dateTime
+		isHidden
+		formatString: Long Date
+		lineageTag: 25616250-e6ca-4c19-b707-ef4351c53494
+		summarizeBy: none
+		sourceColumn: refund_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column order_date
+		dataType: dateTime
+		isHidden
+		formatString: Long Date
+		lineageTag: 2c3f886f-eea9-4782-a6bf-dc8e80cbadfb
+		summarizeBy: none
+		sourceColumn: order_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column title_id
+		dataType: string
+		isHidden
+		lineageTag: 2becc9a7-6c92-446b-9e70-13e623a37bdb
+		summarizeBy: none
+		sourceColumn: title_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column platform_code
+		dataType: string
+		isHidden
+		lineageTag: 241074f1-38ee-46aa-b98c-7a576dbc3bd5
+		summarizeBy: none
+		sourceColumn: platform_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column player_id
+		dataType: string
+		isHidden
+		lineageTag: def0880a-1300-4985-94a8-73cd4fadbe7c
+		summarizeBy: none
+		sourceColumn: player_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column refund_reason
+		dataType: string
+		isHidden
+		lineageTag: 8dbd8026-1961-4dfe-b4ec-6cfeb029b9c4
+		summarizeBy: none
+		sourceColumn: refund_reason
+
+		annotation SummarizationSetBy = Automatic
+
+	column refund_usd
+		dataType: double
+		isHidden
+		lineageTag: 8f9cb422-6ddb-4a5e-ab64-78fb10b26103
+		summarizeBy: sum
+		sourceColumn: refund_usd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column platform_fee_credit_usd
+		dataType: double
+		isHidden
+		lineageTag: c8651113-381a-45e8-994e-4dbafc803b5c
+		summarizeBy: sum
+		sourceColumn: platform_fee_credit_usd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column net_refund_usd
+		dataType: double
+		isHidden
+		lineageTag: b205cc81-b43b-4484-8801-94d9b3a4249f
+		summarizeBy: sum
+		sourceColumn: net_refund_usd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_refund = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "fact_refund.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"refund_id", type text}, {"order_id", type text}, {"refund_date", type date}, {"order_date", type date}, {"title_id", type text}, {"platform_code", type text}, {"player_id", type text}, {"refund_reason", type text}, {"refund_usd", type number}, {"platform_fee_credit_usd", type number}, {"net_refund_usd", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,119 @@
+table dim_date
+	lineageTag: b5c82e1c-c7b9-4843-8f38-e2364a2ad0b6
+	dataCategory: Time
+
+	column date
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: 6fe915af-0f1e-4a63-a4cb-26af3cfb8210
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column calendar_year
+		dataType: int64
+		formatString: 0
+		lineageTag: 9f0ced9f-fabc-4c5d-8166-ff83d6d99663
+		summarizeBy: sum
+		sourceColumn: calendar_year
+
+		annotation SummarizationSetBy = Automatic
+
+	column calendar_month
+		dataType: int64
+		formatString: 0
+		lineageTag: 824080f0-f77b-4856-9975-c337d0c74f0c
+		summarizeBy: sum
+		sourceColumn: calendar_month
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_short
+		dataType: string
+		lineageTag: 0d6fc5d0-21ae-4b9f-852b-394f8f70e5d2
+		summarizeBy: none
+		sourceColumn: month_short
+
+		annotation SummarizationSetBy = Automatic
+
+	column calendar_quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: f92464ad-78a0-441a-8350-27d79f85cd56
+		summarizeBy: sum
+		sourceColumn: calendar_quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_year
+		dataType: string
+		lineageTag: 79bb553f-b828-406d-9c0d-753563038df8
+		summarizeBy: none
+		sourceColumn: fiscal_year
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_quarter
+		dataType: string
+		lineageTag: 772f490e-1cdd-489b-bf3b-c6b8040b641e
+		summarizeBy: none
+		sourceColumn: fiscal_quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_quarter_no
+		dataType: int64
+		formatString: 0
+		lineageTag: cde815ba-ccc1-415a-a47e-97973adda18f
+		summarizeBy: sum
+		sourceColumn: fiscal_quarter_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column fiscal_month_no
+		dataType: int64
+		formatString: 0
+		lineageTag: ca02a8aa-3f30-4b8e-b62c-b51a75478204
+		summarizeBy: sum
+		sourceColumn: fiscal_month_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column year_month
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 7ae3fb56-f977-4b5b-b965-b880aebfb7bc
+		summarizeBy: none
+		sourceColumn: year_month
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column is_weekend
+		dataType: int64
+		formatString: 0
+		lineageTag: e4a60f5f-705f-4aea-a6b1-09123a8465ee
+		summarizeBy: sum
+		sourceColumn: is_weekend
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_date = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_date.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"date", type date}, {"calendar_year", Int64.Type}, {"calendar_month", Int64.Type}, {"month_short", type text}, {"calendar_quarter", Int64.Type}, {"fiscal_year", type text}, {"fiscal_quarter", type text}, {"fiscal_quarter_no", Int64.Type}, {"fiscal_month_no", Int64.Type}, {"year_month", type date}, {"is_weekend", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

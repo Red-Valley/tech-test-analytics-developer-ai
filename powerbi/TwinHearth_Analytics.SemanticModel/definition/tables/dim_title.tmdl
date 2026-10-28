@@ -1,0 +1,72 @@
+table dim_title
+	lineageTag: 01b2f80c-9e5c-4cb1-afb7-bf5f7396b34e
+
+	column title_id
+		dataType: string
+		isHidden
+		lineageTag: 1205a6e1-043a-457d-a5d7-ae420bfb591a
+		summarizeBy: none
+		sourceColumn: title_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column title_name
+		dataType: string
+		lineageTag: 5e28315d-8799-4c1b-adf0-3b794400435a
+		summarizeBy: none
+		sourceColumn: title_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column genre
+		dataType: string
+		lineageTag: 975d4735-0677-4132-8844-9630c75e9e57
+		summarizeBy: none
+		sourceColumn: genre
+
+		annotation SummarizationSetBy = Automatic
+
+	column launch_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 2768e56f-72d1-4910-b7a5-08db65f00705
+		summarizeBy: none
+		sourceColumn: launch_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column lead_studio_id
+		dataType: string
+		isHidden
+		lineageTag: 00195a8f-c875-4b98-9c11-c92038106c67
+		summarizeBy: none
+		sourceColumn: lead_studio_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column base_price_usd
+		dataType: double
+		lineageTag: 2fed478f-620c-4838-b574-128cc7cf84ce
+		summarizeBy: sum
+		sourceColumn: base_price_usd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition dim_title = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents(DataFolder & "dim_title.csv"), [Delimiter=",", Encoding=65001]),
+				    Custom = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(Custom,{{"title_id", type text}, {"title_name", type text}, {"genre", type text}, {"launch_date", type date}, {"lead_studio_id", type text}, {"base_price_usd", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
