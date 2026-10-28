@@ -1,0 +1,118 @@
+﻿// =====================================================================
+// MEASURES.dax — Twin Hearth Studios semantic model
+// All measures live in the display table 'Measures_table'.
+// Composition: 2 base sums -> Net Revenue -> everything else.
+// =====================================================================
+
+
+// ---------------------------------------------------------------------
+// BASE
+// ---------------------------------------------------------------------
+
+Order Net Revenue =
+// Base: net order value (store cut already removed), dated by order date
+SUM ( fact_order[net_usd] )
+
+Refunds (Finance) =
+// Base: net refunds dated to the original order date, as Finance reports them
+SUM ( fact_refund[net_refund_usd] )
+
+Net Revenue =
+// Q1, Q4: what we keep = net orders - net refunds, both on the order date
+[Order Net Revenue] - [Refunds (Finance)]
+
+
+// ---------------------------------------------------------------------
+// CASH VIEWS (alternate dates via inactive relationships)
+// ---------------------------------------------------------------------
+
+Cash Settled =
+// Q2: cash that landed in the bank, dated by settlement date instead of order date
+CALCULATE (
+    [Order Net Revenue],
+    USERELATIONSHIP ( fact_order[settlement_date], dim_date[date] )
+)
+
+Refunds (Treasury) =
+// Q3: net refunds dated by the day the money went back out (Treasury view)
+CALCULATE (
+    [Refunds (Finance)],
+    USERELATIONSHIP ( fact_refund[refund_date], dim_date[date] )
+)
+
+
+// ---------------------------------------------------------------------
+// STUDIO vs COMPANY (co-developed titles credited in full to each studio)
+// ---------------------------------------------------------------------
+
+Company Net Revenue =
+// Q4: company total - ignores any studio filter, so co-developed titles count once
+CALCULATE (
+    [Net Revenue],
+    REMOVEFILTERS ( dim_studio ),
+    REMOVEFILTERS ( bridge_title_studio )
+)
+
+Studio Credited Net Revenue =
+// Q4: sum of studio scorecards - co-developed titles counted once per credited studio
+SUMX (
+    VALUES ( dim_studio[studio_id] ),
+    [Net Revenue]
+)
+
+Co-Development Overlap =
+// Q4: how much the studio sum exceeds the company total because of shared credits (same value on every row)
+CALCULATE (
+    [Studio Credited Net Revenue] - [Company Net Revenue],
+    REMOVEFILTERS ( dim_studio ),
+    REMOVEFILTERS ( bridge_title_studio )
+)
+
+
+// ---------------------------------------------------------------------
+// PLAYERS
+// ---------------------------------------------------------------------
+
+Paying Players =
+// Q5: distinct players with net revenue above zero in the period (fully refunded players excluded)
+COUNTROWS (
+    FILTER (
+        VALUES ( dim_player[player_id] ),
+        [Net Revenue] > 0
+    )
+)
+
+Net Revenue per Paying Player =
+// Q5: what a paying player is worth = net revenue / paying players
+DIVIDE ( [Net Revenue], [Paying Players] )
+
+
+// ---------------------------------------------------------------------
+// GROWTH
+// ---------------------------------------------------------------------
+
+Net Revenue PY =
+// Q6: net revenue for the same period one fiscal year earlier
+CALCULATE (
+    [Net Revenue],
+    SAMEPERIODLASTYEAR ( dim_date[date] )
+)
+
+Net Revenue YoY % =
+// Q6: growth vs the same period of the prior fiscal year
+DIVIDE (
+    [Net Revenue] - [Net Revenue PY],
+    [Net Revenue PY]
+)
+
+
+// ---------------------------------------------------------------------
+// MIX
+// ---------------------------------------------------------------------
+
+% of Studio Net Revenue =
+// Q7: a title's share of the selected studio's net revenue (studio filter kept, title filter removed)
+DIVIDE (
+    [Net Revenue],
+    CALCULATE ( [Net Revenue], REMOVEFILTERS ( dim_title ) )
+)
